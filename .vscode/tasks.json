@@ -1,0 +1,87 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "label": "restore",
+            "command": "dotnet restore",
+            "type": "shell",
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "clean",
+            "command": "dotnet clean",
+            "type": "shell",
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build",
+            "command": "dotnet build",
+            "type": "shell",
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+		{
+			"label": "build tests",
+			"command": "dotnet",
+			"type": "shell",
+			"args": [
+			  "build",
+			  "/property:GenerateFullPaths=true",
+			  "/consoleloggerparameters:NoSummary"
+			],
+			"group": {
+			  "kind": "build",
+			  "isDefault": true
+			},
+			"presentation": {
+			  "reveal": "silent"
+			},
+			"options": {
+			  "cwd": "${workspaceFolder}/tsf.tests"
+			},
+			"problemMatcher": "$msCompile"
+		},		
+		{
+			"label": "run tests",
+			"command": "dotnet",
+			"type": "shell",
+			"args": [
+			  "test",
+			  "/property:GenerateFullPaths=true",
+			  "/consoleloggerparameters:NoSummary"
+			],
+			"options": {
+			  "cwd": "${workspaceFolder}/tsf.tests",
+			},
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "debug tests",
+			"command": "dotnet",
+			"type": "shell",
+			"args": [
+			  "test",
+			  "/property:GenerateFullPaths=true",
+			  "/consoleloggerparameters:NoSummary"
+			],
+			"options": {
+			  "cwd": "${workspaceFolder}/tsf.tests",
+			  "env": {
+				"VSTEST_HOST_DEBUG": "1"
+			  }
+			},
+			"problemMatcher": "$msCompile"
+		}    
+	]
+}
