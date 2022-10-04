@@ -1,48 +1,56 @@
 namespace tsf
 
-[<Struct>]
-type ObsValue = private ObsValue of float
+module Entities =
+    type Error = 
+    | InvalidObsIndexError
+    | TypeNotImplementedError
+    | InvalidYearError
+    | FreqError
+    | IndexError
 
-module ObsValue =
-    let create f = (ObsValue f)
-    let value (ObsValue v) = v
+    type FreqType = 
+        | D 
+        | M 
+        | Q
+        | S
+        | A
 
-type ObsValues = private { Values:float seq; }
+    type FreqIndex = private FreqIndex of int
 
-module ObsValues = 
-    let create count obsSeq = 
-        Seq.init count obsSeq
+    type Year = private Year of int
+    module Year =
+        let create yr =
+            if yr < 1 || yr > 9999 then
+                Error InvalidYearError
+            else
+                Ok (Year yr)
 
-type Year = private Year of int
+        let value (Year y) = y
 
-module Year =
-    let create yr =
-        if yr < 1 || yr > 9999 then
-            Error "Invalid year"
-        else
-            Ok (Year yr)
+    [<Struct>]
+    type ObsValue = private ObsValue of float
+    module ObsValue =
+        let create value = (ObsValue value)
+        let value (ObsValue value) = value
 
-    let value (Year y) = y
+    [<Struct>]
+    type ObsIndex = private { Year:Year; Freq:FreqType; Idx: FreqIndex }
+    module ObsIndex =
+        let create y f i = 
+            if i > 366 then Error InvalidObsIndexError
+            else
+            match f with
+                | FreqType.A -> Ok { Year = (Year y); Freq = f; Idx = (FreqIndex 1) }
+                | FreqType.S -> Ok { Year = (Year y); Freq = f; Idx = (FreqIndex i) }
+                | FreqType.Q -> Error TypeNotImplementedError
+                | FreqType.M -> Error TypeNotImplementedError
+                | FreqType.D -> Error TypeNotImplementedError  
 
-type Month = private Month of int
+    [<Struct>]
+    type ObsValues = private { OIdx:ObsIndex; Values:float seq }
 
-module Month = 
-    let create m = 
-        if m < 1 || m > 12 then
-            Error "Invalid month"
-        else 
-            Ok (Month m)
-
-    let value (Month m) = m
-
-type Quarter = Quarter of int
-
-module Quarter = 
-    let create q = 
-        if q < 1 || q > 4 then 
-            Error "Invalid quarter"
-        else
-            Ok (Quarter q)
-
-    let value(Quarter q) = q 
+    module ObsValues = 
+        let create values oidx  = 
+            Ok { OIdx = oidx; Values = values }
+        let values o = o.Values
 

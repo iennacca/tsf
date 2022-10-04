@@ -2,11 +2,11 @@ namespace tsf.tests
 
 open System
 open Microsoft.VisualStudio.TestTools.UnitTesting
-open tsf
-
+open tsf.Entities
 
 [<TestClass>]
 type TestClass () =
+    let (>>=) m f = Result.bind f m
 
     [<TestMethod>]
     member this.TestMethodPassing () =
@@ -20,8 +20,18 @@ type TestClass () =
         Assert.AreEqual (testValue, f)
 
     [<TestMethod>]
+    member this.CanCreateObsIndex () = 
+        let oi = ObsIndex.create 2000 FreqType.A 1
+        let (Ok r) = oi
+        Assert.AreEqual (r, r)
+
+    [<TestMethod>]
     member this.CanCreateObsValues () = 
         let length = 5
-        let ol = ObsValues.create length (fun f -> f + 1)
-        printfn "%A" ol
-        Assert.AreEqual (Seq.length ol, length) 
+        let r =  ObsIndex.create 2000 FreqType.A 1
+
+        let robs = 
+            r >>= ObsValues.create (TestUtilities.createRandomValues length)
+        let (Ok obs) = robs
+        let values = ObsValues.values obs
+        Assert.AreEqual (Seq.length values, length)
