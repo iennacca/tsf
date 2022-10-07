@@ -1,5 +1,7 @@
 namespace tsf
 
+open Utilities
+
 module Entities =
     type Error = 
     | InvalidObsIndexError
@@ -16,7 +18,16 @@ module Entities =
         | A
 
     type FreqIndex = private FreqIndex of int
+    module FreqIndex =
+        let max f = 
+            match f with
+            | FreqType.A -> 1
+            | FreqType.S -> 2                    
+            | FreqType.Q -> 4
+            | FreqType.M -> 12
+            | FreqType.D -> 366
 
+        
     type Year = private Year of int
     module Year =
         let create yr =
@@ -37,14 +48,16 @@ module Entities =
     type ObsIndex = private { Year:Year; Freq:FreqType; Idx: FreqIndex }
     module ObsIndex =
         let create y f i = 
-            if i > 366 then Error InvalidObsIndexError
-            else
-            match f with
-                | FreqType.A -> Ok { Year = (Year y); Freq = f; Idx = (FreqIndex 1) }
-                | FreqType.S -> Ok { Year = (Year y); Freq = f; Idx = (FreqIndex i) }
-                | FreqType.Q -> Error TypeNotImplementedError
-                | FreqType.M -> Error TypeNotImplementedError
-                | FreqType.D -> Error TypeNotImplementedError  
+            let l = [1..(FreqIndex.max f)]
+            let cFI i = 
+                if List.contains i l then Ok (FreqIndex i)
+                else Error InvalidObsIndexError
+
+            result {
+                let! y' = Year.create y
+                let! i' = cFI i
+                return { Year = y'; Freq = f; Idx = i' }
+            }
 
     [<Struct>]
     type ObsValues = private { OIdx:ObsIndex; Values:float seq }

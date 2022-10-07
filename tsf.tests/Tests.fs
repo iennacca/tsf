@@ -25,13 +25,17 @@ type TestClass () =
         let (Ok r) = oi
         Assert.AreEqual (r, r)
 
+        let oi = ObsIndex.create 2000 FreqType.M 13
+        let (Error e) = oi
+        Assert.AreEqual (e, InvalidObsIndexError)
+
     [<TestMethod>]
     member this.CanCreateObsValues () = 
         let length = 5
-        let r =  ObsIndex.create 2000 FreqType.A 1
+        let oi = ObsIndex.create 2000 FreqType.A 1
 
         let robs = 
-            r >>= ObsValues.create (TestUtilities.createRandomValues length)
+            oi >>= ObsValues.create (TestUtilities.createRandomValues length)
         let (Ok obs) = robs
         let values = ObsValues.values obs
         Assert.AreEqual (Seq.length values, length)
