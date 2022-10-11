@@ -17,6 +17,7 @@ module Entities =
         | S
         | A
 
+    [<Struct>]
     type FreqIndex = private FreqIndex of int
     module FreqIndex =
         let max f = 
@@ -26,13 +27,20 @@ module Entities =
             | FreqType.Q -> 4
             | FreqType.M -> 12
             | FreqType.D -> 366
-
         
+        let seqInfinite f i =
+            let m = max f
+            let mutable i' = i
+            while i' > m do i' <- i' - m 
+            Seq.initInfinite (fun idx -> 
+                if idx + 1 >= m then 0 else idx + 1)
+
+    [<Struct>]
     type Year = private Year of int
     module Year =
         let create yr =
             if yr < 1 || yr > 9999 then
-                Error InvalidYearError
+                Error [InvalidYearError]
             else
                 Ok (Year yr)
 
@@ -51,17 +59,16 @@ module Entities =
             let l = [1..(FreqIndex.max f)]
             let cFI i = 
                 if List.contains i l then Ok (FreqIndex i)
-                else Error InvalidObsIndexError
+                else Error [InvalidObsIndexError]
 
             result {
                 let! y' = Year.create y
-                let! i' = cFI i
-                return { Year = y'; Freq = f; Idx = i' }
+                and! i' = cFI i
+                return! Ok { Year = y'; Freq = f; Idx = i' }
             }
 
     [<Struct>]
     type ObsValues = private { OIdx:ObsIndex; Values:float seq }
-
     module ObsValues = 
         let create values oidx  = 
             Ok { OIdx = oidx; Values = values }
