@@ -14,31 +14,31 @@ type TestClass () =
         Assert.IsTrue (true)
 
     [<TestMethod>]
-    member this.CanCreateAnObsValue () =
+    member this.CanCreateAnObservationValue () =
         let testValue = 5.0
-        let o =  ObsValue.create testValue
-        let f = ObsValue.value o
+        let o =  ObservationValue.create testValue
+        let f = ObservationValue.value o
         Assert.AreEqual (testValue, f)
 
     [<TestMethod>]
-    member this.CanCreateObsIndex () = 
-        let r = ObsIndex.create 2000 FreqType.A 1
+    member this.CanCreateObservationIndex () = 
+        let r = ObservationIndex.convert "2000A01"
         let (Ok oi) = r
         Assert.AreEqual (oi, oi)
 
-        let r' = ObsIndex.create 2000 FreqType.M 13
+        let r' = ObservationIndex.create 2000 FrequencyType.M 13
         let (Error e) = r'
-        Assert.AreEqual (e, [InvalidObsIndexError])
+        Assert.AreEqual (e, [InvalidObservationIndexError])
 
     [<TestMethod>]
-    member this.CanCreateObsValues () = 
+    member this.CanCreateObservationValues () = 
         let length = 5
-        let r = ObsIndex.create 2000 FreqType.A 1
+        let r = ObservationIndex.create 2000 FrequencyType.A 1
         let (Ok idx) = r
 
-        let r' = ObsValues.create (TestUtilities.createRandomValues length) idx 
+        let r' = ObservationValues.create idx (TestUtilities.createRandomValues length) 
         let (Ok obs) = r'
-        let values = ObsValues.values obs
+        let values = ObservationValues.values obs
         Assert.AreEqual (Seq.length values, length)
 
         let l = Seq.toList values
@@ -48,19 +48,38 @@ type TestClass () =
         Assert.AreNotEqual (Seq.head l, Seq.head l')
 
     [<TestMethod>]
-    member this.CanCreateObsIndexSequences () =
-        let s = FreqIndex.seqInfinite Q 0
+    member this.CanCreateObservationIndexSequences () =
+        let s = FrequencyIndex.seqInfinite Q 0
         printfn "%A" s 
 
     [<TestMethod>]
     member this.CanCreateAccumulatedErrors () =
         let r = result {
             let y = -1
-            let! i' = ObsIndex.create y FreqType.A 5
-            return! ObsValues.create (TestUtilities.createRandomValues 5) i'     
+            let! i' = ObservationIndex.create y FrequencyType.A 5
+            return! ObservationValues.create i' (TestUtilities.createRandomValues 5)     
         }
         let (Error r') = r
-        
+
         Assert.AreEqual (List.length r' , 2)
         Assert.AreEqual (List.item 0 r', InvalidYearError)
-        Assert.AreEqual (List.item 1 r', InvalidObsIndexError)
+        Assert.AreEqual (List.item 1 r', InvalidObservationIndexError)
+        
+    [<TestMethod>]
+    member this.CanCreateFrequencyIterator () = 
+        let r = result {
+            return! ObservationIndex.convert "2000M1"
+        }
+        let (Ok r') = r
+
+        let r = result {
+            return! ObservationIndex.convert "2000D200"
+        }
+        let (Ok r') = r
+
+        let r = result {
+            return! ObservationIndex.convert "20000M00"
+        }
+        let (Error r') = r
+
+        Assert.AreEqual (r',r')

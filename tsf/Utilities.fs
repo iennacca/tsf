@@ -1,5 +1,7 @@
 namespace tsf
 
+open FSharp.Reflection
+
 module Utilities =
     type ResultBuilder () =
         member this.Bind (m, f) =
@@ -21,3 +23,12 @@ module Utilities =
         member this.ReturnFrom(x) = x
 
     let result = new ResultBuilder ()
+
+    let DiscriminatedUnionToString<'a> (x:'a) = 
+        let (case, _ ) = FSharpValue.GetUnionFields(x, typeof<'a>)
+        case.Name
+
+    let StringToDiscriminatedUnion<'a> (s:string) =
+        match FSharpType.GetUnionCases typeof<'a> |> Array.filter (fun case -> case.Name = s) with
+        |[|case|] -> Some(FSharpValue.MakeUnion(case,[||]) :?> 'a)
+        |_ -> None

@@ -1,32 +1,35 @@
 namespace tsf
 
+open System
+open Microsoft.FSharp.Reflection
+open System.Text.RegularExpressions
 open Utilities
 
 module Entities =
+    [<Literal>]
+    let NaN = System.Double.MaxValue
+
     type Error = 
-    | InvalidObsIndexError
+    | InvalidObservationIndexError
     | TypeNotImplementedError
     | InvalidYearError
     | FreqError
     | IndexError
 
-    type FreqType = 
-        | D 
-        | M 
-        | Q
-        | S
-        | A
+    type FrequencyType = D|M|Q|S|A with 
+        override this.ToString() = Utilities.DiscriminatedUnionToString<FrequencyType> this
+        static member fromString s = Utilities.StringToDiscriminatedUnion<FrequencyType> s
 
     [<Struct>]
-    type FreqIndex = private FreqIndex of int
-    module FreqIndex =
+    type FrequencyIndex = private FrequencyIndex of int
+    module FrequencyIndex =
         let max f = 
             match f with
-            | FreqType.A -> 1
-            | FreqType.S -> 2                    
-            | FreqType.Q -> 4
-            | FreqType.M -> 12
-            | FreqType.D -> 366
+            | FrequencyType.A -> 1
+            | FrequencyType.S -> 2                    
+            | FrequencyType.Q -> 4
+            | FrequencyType.M -> 12
+            | FrequencyType.D -> 366
         
         let seqInfinite f i =
             let m = max f
@@ -47,30 +50,55 @@ module Entities =
         let value (Year y) = y
 
     [<Struct>]
-    type ObsValue = private ObsValue of float
-    module ObsValue =
-        let create value = (ObsValue value)
-        let value (ObsValue value) = value
+    type ObservationValue = private ObservationValue of float
+    module ObservationValue =
+        let create value = (ObservationValue value)
+        let value (ObservationValue value) = value
 
     [<Struct>]
-    type ObsIndex = private { Year:Year; Freq:FreqType; Idx: FreqIndex }
-    module ObsIndex =
+    type ObservationIndex = private { Year:Year; Freq:FrequencyType; Idx: FrequencyIndex }
+    module ObservationIndex =
         let create y f i = 
-            let l = [1..(FreqIndex.max f)]
+            let l = [1..(FrequencyIndex.max f)]
             let cFI i = 
-                if List.contains i l then Ok (FreqIndex i)
-                else Error [InvalidObsIndexError]
+                if List.contains i l then Ok (FrequencyIndex i)
+                else Error [InvalidObservationIndexError]
 
             result {
                 let! y' = Year.create y
                 and! i' = cFI i
                 return! Ok { Year = y'; Freq = f; Idx = i' }
             }
+        
+        let private create' y f i = 
+            let y' = y |> int 
+            let (Some f') = FrequencyType.fromString f 
+            let i' = i |> int 
+            create y' f' i' 
+
+        let convert input =                 
+            let pattern = @"^([0-9]{4})([ASQMD])([0-9]+)"
+            try
+                let m = Regex.Match(input, pattern)
+                if m.Success then 
+                    // Ok (List.tail [ for g in m.Groups -> g.Value ])
+                    let y = m.Groups[1].Value
+                    let f = m.Groups[2].Value
+                    let i = m.Groups[3].Value
+                    Ok (create' y f i)
+                else 
+                    Error InvalidObservationIndexError
+            with
+                | ex -> Error InvalidObservationIndexError 
 
     [<Struct>]
-    type ObsValues = private { OIdx:ObsIndex; Values:float seq }
-    module ObsValues = 
-        let create values oidx  = 
+    type ObservationIndexIterator = private { OIdx: ObservationIndex }
+
+    [<Struct>]
+    type ObservationValues = private { OIdx:ObservationIndex; Values:float seq }
+    module ObservationValues = 
+        let create oidx values  = 
             Ok { OIdx = oidx; Values = values }
-        let values o = o.Values
+        let values o =
+            o.Values
 
