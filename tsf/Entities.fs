@@ -9,13 +9,6 @@ module Entities =
     [<Literal>]
     let NaN = System.Double.MaxValue
 
-    type Error = 
-    | InvalidObservationIndexError
-    | TypeNotImplementedError
-    | InvalidYearError
-    | FreqError
-    | IndexError
-
     type FrequencyType = D|M|Q|S|A with 
         override this.ToString() = Utilities.DiscriminatedUnionToString<FrequencyType> this
         static member fromString s = Utilities.StringToDiscriminatedUnion<FrequencyType> s
@@ -71,11 +64,13 @@ module Entities =
             }
         
         let private create' y f i = 
-            let y' = y |> int 
-            let (Some f') = FrequencyType.fromString f 
-            let i' = i |> int 
-            create y' f' i' 
-
+            result {
+                let y' = y |> int 
+                let! f' = FrequencyType.fromString f 
+                let i' = i |> int 
+                return! (create y' f' i') 
+            }
+            
         let convert input =                 
             let pattern = @"^([0-9]{4})([ASQMD])([0-9]+)"
             try

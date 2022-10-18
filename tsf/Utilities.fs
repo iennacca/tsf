@@ -3,6 +3,14 @@ namespace tsf
 open FSharp.Reflection
 
 module Utilities =
+    type Error = 
+    | InvalidObservationIndexError
+    | TypeNotImplementedError
+    | InvalidYearError
+    | FreqError
+    | IndexError
+    | InvalidTypeError
+
     type ResultBuilder () =
         member this.Bind (m, f) =
             match m with
@@ -30,5 +38,5 @@ module Utilities =
 
     let StringToDiscriminatedUnion<'a> (s:string) =
         match FSharpType.GetUnionCases typeof<'a> |> Array.filter (fun case -> case.Name = s) with
-        |[|case|] -> Some(FSharpValue.MakeUnion(case,[||]) :?> 'a)
-        |_ -> None
+        |[|case|] -> Ok (FSharpValue.MakeUnion(case,[||]) :?> 'a)
+        |_ -> Error [InvalidTypeError]
