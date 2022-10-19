@@ -82,7 +82,6 @@ module Entities =
                 | ex -> Error [InvalidObservationIndexError] 
         
         static member seqInfinite (oi:ObservationIndex) =
-
             let m = FrequencyIndex.max oi.Freq
             let mutable i' = FrequencyIndex.value oi.Idx
             while i' > m do i' <- i' - m 

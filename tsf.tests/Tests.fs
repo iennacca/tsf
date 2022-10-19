@@ -36,14 +36,12 @@ type TestClass () =
     [<TestMethod>]
     member this.CanGetObservationIndexErrors () = 
         let r = ObservationIndex.create 2000 FrequencyType.M 13
-        let (Error e) = r
-        Assert.AreEqual (e, [InvalidObservationIndexError])
+        Assert.AreEqual (TestUtilities.getExpectedErrors r, [InvalidObservationIndexError])
 
         let r' = result {
             return! ObservationIndex.convert "20000M00"
-        }
-        let (Error e) = r'
-        Assert.AreEqual (e, [InvalidObservationIndexError])
+        } 
+        Assert.AreEqual (TestUtilities.getExpectedErrors r', [InvalidObservationIndexError])
 
     [<TestMethod>]
     member this.CanCreateObservationValues () = 
@@ -64,10 +62,11 @@ type TestClass () =
 
     [<TestMethod>]
     member this.CanCreateObservationIndexSequences () =
-        let oi = ObservationIndex.convert "2001M01"
-        let (Ok oi') = oi
-        let s = ObservationIndex.seqInfinite oi'
-        printfn "%A" s 
+        result {
+            let! oi =  ObservationIndex.convert "2001M01"
+            let s = ObservationIndex.seqInfinite oi 
+            Assert.AreEqual (s,s)
+        } |> TestUtilities.handleUnexpectedErrors
 
     [<TestMethod>]
     member this.CanCreateAccumulatedErrors () =
@@ -75,19 +74,10 @@ type TestClass () =
             let y = -1
             let! i' = ObservationIndex.create y FrequencyType.A 5
             return! ObservationValues.create i' (TestUtilities.createRandomValues 5)     
-        }
-        let (Error r') = r
+        } 
+        let e = TestUtilities.getExpectedErrors r
 
-        Assert.AreEqual (List.length r' , 2)
-        Assert.AreEqual (List.item 0 r', InvalidYearError)
-        Assert.AreEqual (List.item 1 r', InvalidObservationIndexError)
+        Assert.AreEqual (List.length e, 2)
+        Assert.AreEqual (List.item 0 e, InvalidYearError)
+        Assert.AreEqual (List.item 1 e, InvalidObservationIndexError)
         
-    [<TestMethod>]
-    member this.CanCreateFrequencyIterator () = 
-        let r = result {
-            let! i = ObservationIndex.convert "2000M01"
-            // let! l = ObservationIndex.seqInfinite Q 0
-            return! Ok 0
-        }
-        let (Ok r') = r
-        Assert.AreEqual (r', 0)

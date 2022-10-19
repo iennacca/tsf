@@ -13,3 +13,8 @@ module TestUtilities =
         match r with
             |Ok _ -> ()
             |Error _ -> Assert.Fail "Unexpected error encountered." 
+
+    let getExpectedErrors r =
+        match r with
+            |Ok _ -> []
+            |Error e -> e 
