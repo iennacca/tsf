@@ -22,9 +22,12 @@ type TestClass () =
 
     [<TestMethod>]
     member this.CanCreateObservationIndex () = 
-        let r = ObservationIndex.convert "2000A01"
+        let r = ObservationIndex.create 2000 FrequencyType.Q 2
         let (Ok oi) = r
-        Assert.AreEqual (oi, oi)
+        let r' = ObservationIndex.create 2000 FrequencyType.Q 2
+        let (Ok oi') = r'
+        Assert.AreEqual (oi,oi')
+        Assert.AreEqual (Year.value oi.Year, 2000 )
 
         let r' = ObservationIndex.create 2000 FrequencyType.M 13
         let (Error e) = r'
@@ -32,11 +35,6 @@ type TestClass () =
 
         let r = result {
             return! ObservationIndex.convert "2000M1"
-        }
-        let (Ok r') = r
-
-        let r = result {
-            return! ObservationIndex.convert "2000D200"
         }
         let (Ok r') = r
 
