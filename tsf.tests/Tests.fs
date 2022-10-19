@@ -30,6 +30,22 @@ type TestClass () =
         let (Error e) = r'
         Assert.AreEqual (e, [InvalidObservationIndexError])
 
+        let r = result {
+            return! ObservationIndex.convert "2000M1"
+        }
+        let (Ok r') = r
+
+        let r = result {
+            return! ObservationIndex.convert "2000D200"
+        }
+        let (Ok r') = r
+
+        let r = result {
+            return! ObservationIndex.convert "20000M00"
+        }
+        let (Error r') = r
+        Assert.AreEqual (r',r')
+
     [<TestMethod>]
     member this.CanCreateObservationValues () = 
         let length = 5
@@ -49,7 +65,7 @@ type TestClass () =
 
     [<TestMethod>]
     member this.CanCreateObservationIndexSequences () =
-        let s = FrequencyIndex.seqInfinite Q 0
+        let s = ObservationIndex.seqInfinite Q 0
         printfn "%A" s 
 
     [<TestMethod>]
@@ -68,18 +84,9 @@ type TestClass () =
     [<TestMethod>]
     member this.CanCreateFrequencyIterator () = 
         let r = result {
-            return! ObservationIndex.convert "2000M1"
+            let! i = ObservationIndex.convert "2000M01"
+            // let! l = ObservationIndex.seqInfinite Q 0
+            return! Ok 0
         }
         let (Ok r') = r
-
-        let r = result {
-            return! ObservationIndex.convert "2000D200"
-        }
-        let (Ok r') = r
-
-        let r = result {
-            return! ObservationIndex.convert "20000M00"
-        }
-        let (Error r') = r
-
-        Assert.AreEqual (r',r')
+        Assert.AreEqual (r', 0)

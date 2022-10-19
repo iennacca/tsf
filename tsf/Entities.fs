@@ -11,7 +11,7 @@ module Entities =
 
     type FrequencyType = D|M|Q|S|A with 
         override this.ToString() = Utilities.DiscriminatedUnionToString<FrequencyType> this
-        static member fromString s = Utilities.StringToDiscriminatedUnion<FrequencyType> s
+        static member FromString s = Utilities.StringToDiscriminatedUnion<FrequencyType> s
 
     [<Struct>]
     type FrequencyIndex = private FrequencyIndex of int
@@ -23,13 +23,6 @@ module Entities =
             | FrequencyType.Q -> 4
             | FrequencyType.M -> 12
             | FrequencyType.D -> 366
-        
-        let seqInfinite f i =
-            let m = max f
-            let mutable i' = i
-            while i' > m do i' <- i' - m 
-            Seq.initInfinite (fun idx -> 
-                if idx + 1 >= m then 0 else idx + 1)
 
     [<Struct>]
     type Year = private Year of int
@@ -66,7 +59,7 @@ module Entities =
         let private create' y f i = 
             result {
                 let y' = y |> int 
-                let! f' = FrequencyType.fromString f 
+                let! f' = FrequencyType.FromString f 
                 let i' = i |> int 
                 return! (create y' f' i') 
             }
@@ -80,15 +73,19 @@ module Entities =
                     let y = m.Groups[1].Value
                     let f = m.Groups[2].Value
                     let i = m.Groups[3].Value
-                    Ok (create' y f i)
+                    create' y f i
                 else 
-                    Error InvalidObservationIndexError
+                    Error [InvalidObservationIndexError]
             with
-                | ex -> Error InvalidObservationIndexError 
-
-    [<Struct>]
-    type ObservationIndexIterator = private { OIdx: ObservationIndex }
-
+                | ex -> Error [InvalidObservationIndexError] 
+        
+        let seqInfinite f i =
+            let m = FrequencyIndex.max f
+            let mutable i' = i
+            while i' > m do i' <- i' - m 
+            Seq.initInfinite (fun idx -> 
+                if idx + 1 >= m then 0 else idx + 1)
+            
     [<Struct>]
     type ObservationValues = private { OIdx:ObservationIndex; Values:float seq }
     module ObservationValues = 

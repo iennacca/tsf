@@ -5,10 +5,7 @@ open FSharp.Reflection
 module Utilities =
     type Error = 
     | InvalidObservationIndexError
-    | TypeNotImplementedError
     | InvalidYearError
-    | FreqError
-    | IndexError
     | InvalidTypeError
 
     type ResultBuilder () =
