@@ -22,6 +22,7 @@ module Entities =
             | FrequencyType.Q -> 4
             | FrequencyType.M -> 12
             | FrequencyType.D -> 366
+        static member value (FrequencyIndex i) = i  
 
     [<Struct>]
     type Year = private Year of int with 
@@ -80,9 +81,10 @@ module Entities =
             with
                 | ex -> Error [InvalidObservationIndexError] 
         
-        static member seqInfinite f i =
-            let m = FrequencyIndex.max f
-            let mutable i' = i
+        static member seqInfinite (oi:ObservationIndex) =
+
+            let m = FrequencyIndex.max oi.Freq
+            let mutable i' = FrequencyIndex.value oi.Idx
             while i' > m do i' <- i' - m 
             Seq.initInfinite (fun idx -> 
                 if idx + 1 >= m then 0 else idx + 1)
@@ -94,4 +96,3 @@ module Entities =
             Ok { OIdx = oidx; Values = values }
         let values o =
             o.Values
-

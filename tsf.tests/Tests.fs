@@ -22,48 +22,51 @@ type TestClass () =
 
     [<TestMethod>]
     member this.CanCreateObservationIndex () = 
-        let r = ObservationIndex.create 2000 FrequencyType.Q 2
-        let (Ok oi) = r
-        let r' = ObservationIndex.create 2000 FrequencyType.Q 2
-        let (Ok oi') = r'
-        Assert.AreEqual (oi,oi')
-        Assert.AreEqual (Year.value oi.Year, 2000 )
+        result {
+            let! r = ObservationIndex.create 2000 FrequencyType.Q 2
+            let! r' = ObservationIndex.create 2000 FrequencyType.Q 2
+            Assert.AreEqual (r,r')
+            Assert.AreEqual (Year.value r.Year, 2000 )
 
-        let r' = ObservationIndex.create 2000 FrequencyType.M 13
-        let (Error e) = r'
+            let! r'' = ObservationIndex.convert "2000Q02"
+            Assert.AreEqual (r,r'')
+
+        } |> TestUtilities.handleUnexpectedErrors
+
+    [<TestMethod>]
+    member this.CanGetObservationIndexErrors () = 
+        let r = ObservationIndex.create 2000 FrequencyType.M 13
+        let (Error e) = r
         Assert.AreEqual (e, [InvalidObservationIndexError])
 
-        let r = result {
-            return! ObservationIndex.convert "2000M1"
-        }
-        let (Ok r') = r
-
-        let r = result {
+        let r' = result {
             return! ObservationIndex.convert "20000M00"
         }
-        let (Error r') = r
-        Assert.AreEqual (r',r')
+        let (Error e) = r'
+        Assert.AreEqual (e, [InvalidObservationIndexError])
 
     [<TestMethod>]
     member this.CanCreateObservationValues () = 
         let length = 5
-        let r = ObservationIndex.create 2000 FrequencyType.A 1
-        let (Ok idx) = r
+        result {
+            let! idx = ObservationIndex.create 2000 A 1
 
-        let r' = ObservationValues.create idx (TestUtilities.createRandomValues length) 
-        let (Ok obs) = r'
-        let values = ObservationValues.values obs
-        Assert.AreEqual (Seq.length values, length)
+            let! r' = ObservationValues.create idx (TestUtilities.createRandomValues length) 
+            let values = ObservationValues.values r'
+            Assert.AreEqual (Seq.length values, length)
 
-        let l = Seq.toList values
-        let l' = Seq.toList values
-        Assert.AreEqual (List.length l, 5)
-        Assert.AreEqual (List.length l', 5)
-        Assert.AreNotEqual (Seq.head l, Seq.head l')
+            let l = Seq.toList values
+            let l' = Seq.toList values
+            Assert.AreEqual (List.length l, 5)
+            Assert.AreEqual (List.length l', 5)
+            Assert.AreNotEqual (Seq.head l, Seq.head l')
+        } |> TestUtilities.handleUnexpectedErrors
 
     [<TestMethod>]
     member this.CanCreateObservationIndexSequences () =
-        let s = ObservationIndex.seqInfinite Q 0
+        let oi = ObservationIndex.convert "2001M01"
+        let (Ok oi') = oi
+        let s = ObservationIndex.seqInfinite oi'
         printfn "%A" s 
 
     [<TestMethod>]
