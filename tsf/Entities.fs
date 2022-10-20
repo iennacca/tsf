@@ -89,9 +89,9 @@ module Entities =
                 if idx + 1 >= m then 0 else idx + 1)
             
     [<Struct>]
-    type ObservationValues = private { OIdx:ObservationIndex; Values:float seq }
-    module ObservationValues = 
-        let create oidx values  = 
-            Ok { OIdx = oidx; Values = values }
-        let values o =
-            o.Values
+    type ObservationValues = private { _oidx:ObservationIndex; _values:float seq }with
+        member this.OIdx = this._oidx
+        member this.Values = this._values
+
+        static member public create oidx values  = 
+            Ok { _oidx = oidx; _values = values }

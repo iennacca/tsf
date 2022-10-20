@@ -50,7 +50,7 @@ type TestClass () =
             let! idx = ObservationIndex.create 2000 A 1
 
             let! r' = ObservationValues.create idx (TestUtilities.createRandomValues length) 
-            let values = ObservationValues.values r'
+            let values = r'.Values
             Assert.AreEqual (Seq.length values, length)
 
             let l = Seq.toList values
