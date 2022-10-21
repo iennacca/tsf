@@ -4,9 +4,10 @@ open FSharp.Reflection
 
 module Utilities =
     type Error = 
-    | InvalidObservationIndexError
-    | InvalidYearError
-    | InvalidTypeError
+    | InvalidObservationIndex
+    | InvalidYear
+    | InvalidType
+    | InvalidConsolidationOperation
 
     type ResultBuilder () =
         member this.Bind (m, f) =
@@ -36,4 +37,4 @@ module Utilities =
     let StringToDiscriminatedUnion<'a> (s:string) =
         match FSharpType.GetUnionCases typeof<'a> |> Array.filter (fun case -> case.Name = s) with
         |[|case|] -> Ok (FSharpValue.MakeUnion(case,[||]) :?> 'a)
-        |_ -> Error [InvalidTypeError]
+        |_ -> Error [InvalidType]

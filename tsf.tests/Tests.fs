@@ -36,12 +36,12 @@ type TestClass () =
     [<TestMethod>]
     member this.CanGetObservationIndexErrors () = 
         let r = ObservationIndex.create 2000 FrequencyType.M 13
-        Assert.AreEqual (TestUtilities.getExpectedErrors r, [InvalidObservationIndexError])
+        Assert.AreEqual (TestUtilities.getExpectedErrors r, [InvalidObservationIndex])
 
         let r' = result {
             return! ObservationIndex.convert "20000M00"
         } 
-        Assert.AreEqual (TestUtilities.getExpectedErrors r', [InvalidObservationIndexError])
+        Assert.AreEqual (TestUtilities.getExpectedErrors r', [InvalidObservationIndex])
 
     [<TestMethod>]
     member this.CanCreateObservationValues () = 
@@ -61,14 +61,6 @@ type TestClass () =
         } |> TestUtilities.handleUnexpectedErrors
 
     [<TestMethod>]
-    member this.CanCreateObservationIndexSequences () =
-        result {
-            let! oi =  ObservationIndex.convert "2001M01"
-            let s = ObservationIndex.seqInfinite oi 
-            Assert.AreEqual (s,s)
-        } |> TestUtilities.handleUnexpectedErrors
-
-    [<TestMethod>]
     member this.CanCreateAccumulatedErrors () =
         let r = result {
             let y = -1
@@ -78,6 +70,15 @@ type TestClass () =
         let e = TestUtilities.getExpectedErrors r
 
         Assert.AreEqual (List.length e, 2)
-        Assert.AreEqual (List.item 0 e, InvalidYearError)
-        Assert.AreEqual (List.item 1 e, InvalidObservationIndexError)
-        
+        Assert.AreEqual (List.item 0 e, InvalidYear)
+        Assert.AreEqual (List.item 1 e, InvalidObservationIndex)
+
+    [<TestMethod>]
+    member this.CanConsolidateAnObservationValueSequence () =
+        result {
+            let! oi =  ObservationIndex.convert "2001M01"
+            let v = TestUtilities.createRandomValues 10
+            let! ov = ObservationValues.create oi v
+            let! ov' = ObservationValues.consolidate Q Sum ov
+            Assert.AreEqual (ov', ov') 
+        } |> TestUtilities.handleUnexpectedErrors

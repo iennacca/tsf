@@ -14,6 +14,11 @@ module Entities =
         static member FromString s = Utilities.StringToDiscriminatedUnion<FrequencyType> s
 
     [<Struct>]
+    type ConsolidateMethod = Sum|Average with
+        override this.ToString() = Utilities.DiscriminatedUnionToString<ConsolidateMethod> this
+        static member FromString s = Utilities.StringToDiscriminatedUnion<ConsolidateMethod> s
+
+    [<Struct>]
     type FrequencyIndex = private FrequencyIndex of int with 
         static member max f = 
             match f with
@@ -28,7 +33,7 @@ module Entities =
     type Year = private Year of int with 
         static member public create yr =
             if yr < 1 || yr > 9999 then
-                Error [InvalidYearError]
+                Error [InvalidYear]
             else
                 Ok (Year yr)
 
@@ -50,7 +55,7 @@ module Entities =
             let l = [1..(FrequencyIndex.max f)]
             let cFI i = 
                 if List.contains i l then Ok (FrequencyIndex i)
-                else Error [InvalidObservationIndexError]
+                else Error [InvalidObservationIndex]
 
             result {
                 let! y' = Year.create y
@@ -77,16 +82,9 @@ module Entities =
                     let i = m.Groups[3].Value
                     ObservationIndex.create' y f i
                 else 
-                    Error [InvalidObservationIndexError]
+                    Error [InvalidObservationIndex]
             with
-                | ex -> Error [InvalidObservationIndexError] 
-        
-        static member seqInfinite (oi:ObservationIndex) =
-            let m = FrequencyIndex.max oi.Freq
-            let mutable i' = FrequencyIndex.value oi.Idx
-            while i' > m do i' <- i' - m 
-            Seq.initInfinite (fun idx -> 
-                if idx + 1 >= m then 0 else idx + 1)
+                | ex -> Error [InvalidObservationIndex] 
             
     [<Struct>]
     type ObservationValues = private { _oidx:ObservationIndex; _values:float seq }with
@@ -95,3 +93,22 @@ module Entities =
 
         static member public create oidx values  = 
             Ok { _oidx = oidx; _values = values }
+
+        static member public consolidate fCons (mCons:ConsolidateMethod) (ov:ObservationValues) = 
+            let validateFrequency oldf newf = 
+                if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
+                else  Error [InvalidConsolidationOperation]
+
+            let getIdx (i:FrequencyIndex) =
+                Ok (FrequencyIndex 0)
+
+            let calculate f axis s = 
+                Seq.empty
+
+            result {
+                let y' = ov.OIdx.Year
+                let! f' = validateFrequency ov.OIdx.Freq fCons
+                let! i' = getIdx ov.OIdx.Idx
+                let oi = { _year = y'; _freq = f'; _idx = i' }
+                // return!
+            }
