@@ -8,6 +8,7 @@ module Utilities =
     | InvalidYear
     | InvalidType
     | InvalidConsolidationOperation
+    | UnimplementedOperation
 
     type ResultBuilder () =
         member this.Bind (m, f) =
@@ -15,7 +16,7 @@ module Utilities =
             | Error e ->
                 printfn "Error: %A" e
             | Ok a ->
-                printfn "Binding with Some(%A). Continuing" a
+                printfn "Binding with Ok (%A). Continuing" a
             Result.bind f m
         member this.Return (x) = 
             Ok (x, [])

@@ -19,7 +19,8 @@ module Entities =
         static member FromString s = Utilities.StringToDiscriminatedUnion<ConsolidateMethod> s
 
     [<Struct>]
-    type FrequencyIndex = private FrequencyIndex of int with 
+    //Named both union cases because of error FS3204 (nonsensical in this case IMHO) 
+    type FrequencyIndex = CardinalType of c:int | DateType of d:DateOnly with
         static member max f = 
             match f with
             | FrequencyType.A -> 1
@@ -27,7 +28,6 @@ module Entities =
             | FrequencyType.Q -> 4
             | FrequencyType.M -> 12
             | FrequencyType.D -> 366
-        static member value (FrequencyIndex i) = i  
 
     [<Struct>]
     type Year = private Year of int with 
@@ -52,26 +52,19 @@ module Entities =
         member public this.Idx = this._idx
 
         static member create y f i = 
-            let l = [1..(FrequencyIndex.max f)]
-            let cFI i = 
-                if List.contains i l then Ok (FrequencyIndex i)
+            let cFI f i = 
+                let l = [1..(FrequencyIndex.max f)]
+                if List.contains i l then Ok (FrequencyIndex.CardinalType i)
                 else Error [InvalidObservationIndex]
 
             result {
-                let! y' = Year.create y
-                and! i' = cFI i
-                return! Ok { _year = y'; _freq = f; _idx = i' }
-            }
-        
-        static member private create' y f i = 
-            result {
-                let y' = y |> int 
                 let! f' = FrequencyType.FromString f 
-                let i' = i |> int 
-                return! (ObservationIndex.create y' f' i') 
+                let! y' = y |> int |> Year.create
+                and! i' = i |> int |> cFI f'
+                return! Ok { _year = y'; _freq = f'; _idx = i' }
             }
             
-        static member convert input =                 
+        static member FromString input =                 
             let pattern = @"^([0-9]{4})([ASQMD])([0-9]+)"
             try
                 let m = Regex.Match(input, pattern)
@@ -80,7 +73,7 @@ module Entities =
                     let y = m.Groups[1].Value
                     let f = m.Groups[2].Value
                     let i = m.Groups[3].Value
-                    ObservationIndex.create' y f i
+                    ObservationIndex.create y f i
                 else 
                     Error [InvalidObservationIndex]
             with
@@ -92,23 +85,24 @@ module Entities =
         member this.Values = this._values
 
         static member public create oidx values  = 
-            Ok { _oidx = oidx; _values = values }
+            { _oidx = oidx; _values = values }
 
-        static member public consolidate fCons (mCons:ConsolidateMethod) (ov:ObservationValues) = 
+        static member public consolidate consFreq (consMethod:ConsolidateMethod) (ov:ObservationValues) = 
             let validateFrequency oldf newf = 
                 if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
                 else  Error [InvalidConsolidationOperation]
 
-            let getIdx (i:FrequencyIndex) =
-                Ok (FrequencyIndex 0)
+            let getIdx (i:FrequencyIndex):Result<FrequencyIndex,list<Error>> =
+                Ok (FrequencyIndex.CardinalType 0)
 
-            let calculate f axis s = 
-                Seq.empty
+            let calculate (freq:FrequencyType) (method:ConsolidateMethod) (obsValues:ObservationValues) : Result<float seq, list<Error>> = 
+                Error [UnimplementedOperation]
 
             result {
                 let y' = ov.OIdx.Year
-                let! f' = validateFrequency ov.OIdx.Freq fCons
+                let! f' = validateFrequency ov.OIdx.Freq consFreq
                 let! i' = getIdx ov.OIdx.Idx
-                let oi = { _year = y'; _freq = f'; _idx = i' }
-                // return!
+                let! v' = calculate f' consMethod ov
+                let oi' = { _year = ov.OIdx.Year; _freq = f'; _idx = i' }  
+                return! Error [UnimplementedOperation]
             }
