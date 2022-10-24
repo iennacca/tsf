@@ -86,9 +86,9 @@ type TestClass () =
             try
                Ok (f i)
             with 
-                | ex -> Error (ExN ex)
+                | ex -> Error [(ExN ex)]
 
-        let i = toResult int "1"
-        let (Ok i') = i
-        Assert.AreEqual (1, i')
-         
+        result { 
+            let! i = toResult int "1"
+            Assert.AreEqual (1, i)
+        } |> TestUtilities.handleUnexpectedErrors
