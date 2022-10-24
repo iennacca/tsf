@@ -82,13 +82,11 @@ type TestClass () =
 
     [<TestMethod>]
     member this.CanCreateResultFromConversion () = 
-        let toResult f i = 
-            try
-               Ok (f i)
-            with 
-                | ex -> Error [(ExN ex)]
 
         result { 
-            let! i = toResult int "1"
+            let! i = ToResult int "1"
             Assert.AreEqual (1, i)
+
+            let! i' = "2" |> ToResult int
+            Assert.AreEqual (2, i')
         } |> TestUtilities.handleUnexpectedErrors

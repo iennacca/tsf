@@ -42,3 +42,9 @@ module Utilities =
         match FSharpType.GetUnionCases typeof<'a> |> Array.filter (fun case -> case.Name = s) with
         |[|case|] -> Ok (FSharpValue.MakeUnion(case,[||]) :?> 'a)
         |_ -> Error [InvalidType]
+
+    let ToResult f i = 
+        try
+            Ok (f i)
+        with 
+            | ex -> Error [(ExN ex)]
