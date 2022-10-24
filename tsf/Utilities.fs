@@ -1,14 +1,17 @@
 namespace tsf
 
+open System
 open FSharp.Reflection
 
 module Utilities =
-    type Error = 
+    type EntityError = 
     | InvalidObservationIndex
     | InvalidYear
     | InvalidType
     | InvalidConsolidationOperation
     | UnimplementedOperation
+    | InvalidOperation
+    | ExN of exn
 
     type ResultBuilder () =
         member this.Bind (m, f) =

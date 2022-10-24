@@ -80,28 +80,22 @@ module Entities =
                 | ex -> Error [InvalidObservationIndex] 
             
     [<Struct>]
-    type ObservationValues = private { _oidx:ObservationIndex; _values:float seq }with
-        member this.OIdx = this._oidx
-        member this.Values = this._values
-
-        static member public create oidx values  = 
-            { _oidx = oidx; _values = values }
-
+    type ObservationValues = { OIdx:ObservationIndex; Values:float seq } with
         static member public consolidate consFreq (consMethod:ConsolidateMethod) (ov:ObservationValues) = 
             let validateFrequency oldf newf = 
                 if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
                 else  Error [InvalidConsolidationOperation]
 
-            let getIdx (i:FrequencyIndex):Result<FrequencyIndex,list<Error>> =
+            let getIdx (i:FrequencyIndex):Result<FrequencyIndex,list<EntityError>> =
                 Ok (FrequencyIndex.CardinalType 0)
 
-            let calculate (freq:FrequencyType) (method:ConsolidateMethod) (obsValues:ObservationValues) : Result<float seq, list<Error>> = 
+            let calculate (freq:FrequencyType) (method:ConsolidateMethod) (obsValues:ObservationValues) : Result<float seq, list<EntityError>> = 
                 Error [UnimplementedOperation]
 
             result {
-                let y' = ov.OIdx.Year
-                let! f' = validateFrequency ov.OIdx.Freq consFreq
-                let! i' = getIdx ov.OIdx.Idx
+                let! y' = Ok ov.OIdx.Year
+                and! f' = validateFrequency ov.OIdx.Freq consFreq
+                and! i' = getIdx ov.OIdx.Idx
                 let! v' = calculate f' consMethod ov
                 let oi' = { _year = ov.OIdx.Year; _freq = f'; _idx = i' }  
                 return! Error [UnimplementedOperation]

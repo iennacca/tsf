@@ -43,8 +43,8 @@ type TestClass () =
     member this.CanCreateObservationValues () = 
         let length = 5
         result {
-            let! idx = ObservationIndex.FromString "2000A01"
-            let ov = ObservationValues.create idx (TestUtilities.createRandomValues length) 
+            let! oi = ObservationIndex.FromString "2000A01"
+            let ov = { OIdx = oi; Values = (TestUtilities.createRandomValues length) }
             let values = ov.Values
             Assert.AreEqual (Seq.length values, length)
 
@@ -58,8 +58,8 @@ type TestClass () =
     [<TestMethod>]
     member this.CanCreateAccumulatedErrors () =
         let r = result {
-            let! i = ObservationIndex.create "-1" "A" "5"
-            return ObservationValues.create i (TestUtilities.createRandomValues 5)     
+            let! oi = ObservationIndex.create "-1" "A" "5"
+            return { OIdx = oi; Values = (TestUtilities.createRandomValues 5) }
         } 
         let e = TestUtilities.getExpectedErrors r
 
@@ -72,10 +72,23 @@ type TestClass () =
         let r = result {
             let! oi =  ObservationIndex.FromString "2001M01"
             let v = TestUtilities.createRandomValues 10
-            let ov = ObservationValues.create oi v
+            let ov = { OIdx = oi; Values = v }
             let! ov' = ObservationValues.consolidate Q Sum ov
             Assert.AreEqual (ov', ov') 
         }
 
         let e = TestUtilities.getExpectedErrors r
         Assert.AreEqual (1, List.length e)
+
+    [<TestMethod>]
+    member this.CanCreateResultFromConversion () = 
+        let toResult f i = 
+            try
+               Ok (f i)
+            with 
+                | ex -> Error (ExN ex)
+
+        let i = toResult int "1"
+        let (Ok i') = i
+        Assert.AreEqual (1, i')
+         
