@@ -58,31 +58,17 @@ type TestClass () =
     [<TestMethod>]
     member this.CanCreateAccumulatedErrors () =
         let r = result {
-            let! oi = ObservationIndex.create "-1" "A" "5"
+            let! oi = ObservationIndex.create "A" "B" "X"
             return { OIdx = oi; Values = (TestUtilities.createRandomValues 5) }
         } 
         let e = TestUtilities.getExpectedErrors r
 
-        Assert.AreEqual (2, List.length e)
-        Assert.AreEqual (InvalidYear, List.item 0 e)
-        Assert.AreEqual (InvalidObservationIndex, List.item 1 e)
+        Assert.AreEqual (3, List.length e)
+        Assert.IsTrue (List.contains InvalidType e)
+        Assert.IsTrue (List.contains InvalidFormat e)
 
     [<TestMethod>]
-    member this.CanConsolidateAnObservationValueSequence () =
-        let r = result {
-            let! oi =  ObservationIndex.FromString "2001M01"
-            let v = TestUtilities.createRandomValues 10
-            let ov = { OIdx = oi; Values = v }
-            let! ov' = ObservationValues.consolidate Q Sum ov
-            Assert.AreEqual (ov', ov') 
-        }
-
-        let e = TestUtilities.getExpectedErrors r
-        Assert.AreEqual (1, List.length e)
-
-    [<TestMethod>]
-    member this.CanCreateResultFromConversion () = 
-
+    member this.CanCreateResultFromWrappedException () = 
         result { 
             let! i = ToResult int "1"
             Assert.AreEqual (1, i)
@@ -90,3 +76,17 @@ type TestClass () =
             let! i' = "2" |> ToResult int
             Assert.AreEqual (2, i')
         } |> TestUtilities.handleUnexpectedErrors
+
+    [<TestMethod>]
+    member this.CanConsolidateAnObservationValueSequence () =
+        let r = result {
+            let! oi =  ObservationIndex.FromString "2001M01"
+            let v = TestUtilities.createRandomValues 10
+            let ov = { OIdx = oi; Values = v }
+            let! ov' = ObservationValues.iterate 36 Q oi
+            Seq.iter (printf "%A ") ov'
+            Assert.AreEqual (ov', ov') 
+        }
+
+        let e = TestUtilities.getExpectedErrors r
+        Assert.AreEqual (1, List.length e)
