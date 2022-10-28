@@ -58,10 +58,13 @@ module Entities =
                 else Error [InvalidObservationIndex]
 
             result {
-                let! f' = FrequencyType.FromString f 
-                let! y' = y |> int |> Year.create
-                and! i' = i |> int |> cFI f'
-                return! Ok { _year = y'; _freq = f'; _idx = i' }
+                let! y' = ToResult int y 
+                and! f' = FrequencyType.FromString f 
+                and! i' = ToResult int i 
+
+                let! y'' = Year.create y'
+                and! i'' = cFI f' i'
+                return! Ok { _year = y''; _freq = f'; _idx = i'' }
             }
             
         static member FromString input =                 
@@ -81,22 +84,43 @@ module Entities =
             
     [<Struct>]
     type ObservationValues = { OIdx:ObservationIndex; Values:float seq } with
-        static member public consolidate consFreq (consMethod:ConsolidateMethod) (ov:ObservationValues) = 
-            let validateFrequency oldf newf = 
-                if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
-                else  Error [InvalidConsolidationOperation]
+        static member private validateFrequency oldf newf = 
+            if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
+            else  Error [InvalidConsolidationOperation]
 
-            let getIdx (i:FrequencyIndex):Result<FrequencyIndex,list<EntityError>> =
-                Ok (FrequencyIndex.CardinalType 0)
+        static member private getStartIdx (f:FrequencyType) (oi:ObservationIndex) :Result<FrequencyIndex,list<EntityError>> =
+            Ok (FrequencyIndex.CardinalType 0)
 
-            let calculate (freq:FrequencyType) (method:ConsolidateMethod) (obsValues:ObservationValues) : Result<float seq, list<EntityError>> = 
-                Error [UnimplementedOperation]
+        static member public iterate count (consFreq:FrequencyType) (oi:ObservationIndex) = 
+            let iterate' max (oi:ObservationIndex) =
+                result {
+                    match oi.Idx with
+                    | FrequencyIndex.CardinalType i' -> 
+                        return! Ok (Seq.take count (Seq.initInfinite (fun i -> i' + i % max))) 
+                    | FrequencyIndex.DateType d' -> 
+                        return! Error [UnimplementedOperation]
+                }
 
             result {
-                let! y' = Ok ov.OIdx.Year
-                and! f' = validateFrequency ov.OIdx.Freq consFreq
-                and! i' = getIdx ov.OIdx.Idx
-                let! v' = calculate f' consMethod ov
-                let oi' = { _year = ov.OIdx.Year; _freq = f'; _idx = i' }  
-                return! Error [UnimplementedOperation]
+                let! y' = Ok oi.Idx
+                and! f' = ObservationValues.validateFrequency oi.Freq consFreq
+                and! i' = ObservationValues.getStartIdx consFreq oi 
+
+                let oi' = { _year = oi.Year; _freq = f'; _idx = i' } 
+                let oiFreqMax = FrequencyIndex.max oi.Freq
+                let consFreqMax = FrequencyIndex.max consFreq
+                let d = oiFreqMax / consFreqMax
+                return! (iterate' oiFreqMax oi) 
             }
+
+        // static member public consolidate consFreq consMethod ov = 
+        //     result {
+        //         let! y' = Ok ov.OIdx.Year
+        //         and! f' = ObservationValues.validateFrequency ov.OIdx.Freq consFreq
+        //         and! i' = ObservationValues.getStartIdx consFreq ov.OIdx
+
+        //         let oi' = { _year = ov.OIdx.Year; _freq = f'; _idx = i' }  
+        //         let! v' = ObservationValues.calculate f' consMethod ov
+        //         return! Ok { OIdx = oi'; Values = v' }
+        //     }
+

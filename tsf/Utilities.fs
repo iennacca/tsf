@@ -11,7 +11,7 @@ module Utilities =
     | InvalidConsolidationOperation
     | UnimplementedOperation
     | InvalidOperation
-    | ExN of exn
+    | InvalidFormat
 
     type ResultBuilder () =
         member this.Bind (m, f) =
@@ -47,4 +47,5 @@ module Utilities =
         try
             Ok (f i)
         with 
-            | ex -> Error [(ExN ex)]
+            | :? FormatException as ex -> Error [InvalidFormat]
+            | _ -> reraise()
