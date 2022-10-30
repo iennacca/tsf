@@ -40,7 +40,9 @@ module Entities =
         static member public value (Year y) = y
 
     [<Struct>]
-    type ObservationValue = private ObservationValue of float
+    type ObservationValue = private ObservationValue of float with 
+        static member private value (ObservationValue v) = v 
+
     module ObservationValue =
         let create value = (ObservationValue value)
         let value (ObservationValue value) = value
@@ -84,43 +86,31 @@ module Entities =
             
     [<Struct>]
     type ObservationValues = { OIdx:ObservationIndex; Values:float seq } with
-        static member private validateFrequency oldf newf = 
-            if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
-            else  Error [InvalidConsolidationOperation]
+        static member public test (consFreq:FrequencyType) (ov:ObservationValues) = 
+            let validateFrequency oldf newf = 
+                if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
+                else  Error [InvalidConsolidationOperation]
 
-        static member private getStartIdx (f:FrequencyType) (oi:ObservationIndex) :Result<FrequencyIndex,list<EntityError>> =
-            Ok (FrequencyIndex.CardinalType 0)
+            let getConsOIdx consFreqMax ov = 
+                let (CardinalType fIdx) = ov.OIdx.Idx
+                fIdx / consFreqMax
 
-        static member public iterate count (consFreq:FrequencyType) (oi:ObservationIndex) = 
-            let iterate' max (oi:ObservationIndex) =
-                result {
-                    match oi.Idx with
-                    | FrequencyIndex.CardinalType i' -> 
-                        return! Ok (Seq.take count (Seq.initInfinite (fun i -> i' + i % max))) 
-                    | FrequencyIndex.DateType d' -> 
-                        return! Error [UnimplementedOperation]
-                }
+            let getConsModulo consFreqMax oiFreqMax  = 
+                oiFreqMax % consFreqMax
 
+            let iterate oiFreqMax oi = 
+                Ok (Seq.unfold (fun acc -> (Some (acc, (acc + 1) % oiFreqMax))) oi) 
+                
             result {
-                let! y' = Ok oi.Idx
-                and! f' = ObservationValues.validateFrequency oi.Freq consFreq
-                and! i' = ObservationValues.getStartIdx consFreq oi 
+                let! y' = Ok ov.OIdx.Year
+                and! f' = validateFrequency ov.OIdx.Freq consFreq
 
-                let oi' = { _year = oi.Year; _freq = f'; _idx = i' } 
-                let oiFreqMax = FrequencyIndex.max oi.Freq
+                let oiFreqMax = FrequencyIndex.max ov.OIdx.Freq
                 let consFreqMax = FrequencyIndex.max consFreq
-                let d = oiFreqMax / consFreqMax
-                return! (iterate' oiFreqMax oi) 
+
+                let (CardinalType i) = ov.OIdx.Idx
+                let i' = getConsOIdx consFreqMax ov
+                let d' = getConsModulo consFreqMax oiFreqMax
+                let oi' = { _year = ov.OIdx.Year; _freq = f'; _idx = (CardinalType i') } 
+                return! iterate oiFreqMax i 
             }
-
-        // static member public consolidate consFreq consMethod ov = 
-        //     result {
-        //         let! y' = Ok ov.OIdx.Year
-        //         and! f' = ObservationValues.validateFrequency ov.OIdx.Freq consFreq
-        //         and! i' = ObservationValues.getStartIdx consFreq ov.OIdx
-
-        //         let oi' = { _year = ov.OIdx.Year; _freq = f'; _idx = i' }  
-        //         let! v' = ObservationValues.calculate f' consMethod ov
-        //         return! Ok { OIdx = oi'; Values = v' }
-        //     }
-

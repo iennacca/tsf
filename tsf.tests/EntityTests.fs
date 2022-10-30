@@ -6,7 +6,7 @@ open tsf.Entities
 open tsf.Utilities
 
 [<TestClass>]
-type TestClass () =
+type EntityTests () =
     let (>>=) m f = Result.bind f m
 
     [<TestMethod>]
@@ -68,6 +68,22 @@ type TestClass () =
         Assert.IsTrue (List.contains InvalidFormat e)
 
     [<TestMethod>]
+    member this.CanConsolidateAnObservationValueSequence () =
+        let r = result {
+            let! oi =  ObservationIndex.FromString "2001M04"
+            let v = TestUtilities.createRandomValues 10
+            let ov = { OIdx = oi; Values = v }
+            let! ov' = ObservationValues.test Q ov
+            ov' |> Seq.take 36 |> Seq.iter (printf "%A ")
+            Assert.AreEqual (ov', ov') 
+        }
+
+        let e = TestUtilities.getExpectedErrors r
+        Assert.AreEqual (1, List.length e)
+
+[<TestClass>]
+type UtilityTests () =
+    [<TestMethod>]
     member this.CanCreateResultFromWrappedException () = 
         result { 
             let! i = ToResult int "1"
@@ -77,16 +93,3 @@ type TestClass () =
             Assert.AreEqual (2, i')
         } |> TestUtilities.handleUnexpectedErrors
 
-    [<TestMethod>]
-    member this.CanConsolidateAnObservationValueSequence () =
-        let r = result {
-            let! oi =  ObservationIndex.FromString "2001M01"
-            let v = TestUtilities.createRandomValues 10
-            let ov = { OIdx = oi; Values = v }
-            let! ov' = ObservationValues.iterate 36 Q oi
-            Seq.iter (printf "%A ") ov'
-            Assert.AreEqual (ov', ov') 
-        }
-
-        let e = TestUtilities.getExpectedErrors r
-        Assert.AreEqual (1, List.length e)
