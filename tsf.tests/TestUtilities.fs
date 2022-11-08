@@ -2,7 +2,8 @@ namespace tsf.tests
 
 open System
 open Microsoft.VisualStudio.TestTools.UnitTesting
-
+open tsf.Utilities
+open tsf.Entities
 
 module TestUtilities =
     let createRandomValues count = 
@@ -18,3 +19,15 @@ module TestUtilities =
         match r with
             |Ok _ -> []
             |Error e -> e 
+
+    let (>>=) m f = Result.bind f m
+
+    let createIterator strOI oValues consFreq = 
+        let length = Seq.length oValues
+        result {
+            let! oi =  ObservationIndex.FromString strOI
+            let v = createRandomValues length
+            let ov = { OIdx = oi; Values = v }
+            return! ObservationValues.iterate consFreq ov
+        }
+
