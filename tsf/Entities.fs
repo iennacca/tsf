@@ -117,17 +117,19 @@ module Entities =
             // let getConsOIdxSeq oidx length = 
             //     Ok ((Seq.unfold (fun acc -> Some (acc, (ObservationIndex.increment acc 1))) oidx) |> Seq.take length) 
 
-            let getConsOIdxSeq consoidx oidx length d = 
+            let getConsOIdxSeq consoidx ov d = 
                 let s = seq {
                     let mutable j = 0
+                    
+                    let length = Seq.length ov.Values
                     for i in 0 .. length - 1 do
-                        let oi = ObservationIndex.increment oidx i
+                        let oi = ObservationIndex.increment ov.OIdx i
                         let (CardinalType c) = oi.Idx
+
+                        yield oi
                         if (c + 1) % d = 0 then
-                            yield oi
                             yield ObservationIndex.increment consoidx j
                             j <- j + 1
-                        else yield oi
                 }
                 Ok s
 
@@ -139,10 +141,10 @@ module Entities =
                 let consFreqMax = FrequencyIndex.max consFreq
                 let length = Seq.length ov.Values
 
-                let m' = getConsDivisor consFreqMax oiFreqMax
-                let i' = getConsOIdx m' ov
+                let d' = getConsDivisor consFreqMax oiFreqMax
+                let i' = getConsOIdx d' ov
                 let oi' = { _year = y'; _freq = f'; _idx = (CardinalType i') } 
 
                 // return! (getConsOIdxSeq oi' length)
-                return! (getConsOIdxSeq oi' ov.OIdx length m')
+                return! (getConsOIdxSeq oi' ov d')
             }

@@ -69,44 +69,49 @@ type EntityTests () =
     member this.CanConsolidateFromMonthly () =
         result {
             let length = 10
+            let nConsValues = 3
             let tail = length - 1
-            let! seqOIdx = EntityTests.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
-            Assert.AreEqual (length, Seq.length seqOIdx) 
+            let! seqOIdx = TestUtilities.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
+            Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
-            let! ov' = ObservationIndex.FromString "2001Q0"
+            let! ov' = ObservationIndex.FromString "2001M0"
             Assert.AreEqual (ov', Seq.head seqOIdx)
 
-            let! ov'' = ObservationIndex.FromString "2001Q03"
-            Assert.AreEqual (ov'', Seq.item tail seqOIdx)
+            let! ov'' = ObservationIndex.FromString "2001M9"
+            Assert.AreEqual (ov'', Seq.item (tail + nConsValues) seqOIdx)
         } |> TestUtilities.handleUnexpectedErrors
 
         result {
             let length = 10
+            let nConsValues = 3
             let tail = length - 1
-            let! seqOIdx = EntityTests.createIterator "2001M04" (TestUtilities.createRandomValues length) Q 
-            Assert.AreEqual (length, Seq.length seqOIdx) 
+            let! seqOIdx = TestUtilities.createIterator "2001M04" (TestUtilities.createRandomValues length) Q 
+            Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
-            let! ov' = ObservationIndex.FromString "2001Q01"
+            let! ov' = ObservationIndex.FromString "2001M4"
             Assert.AreEqual (ov', Seq.head seqOIdx)
 
-            Assert.AreEqual (ov', Seq.item tail seqOIdx)
+            let! ov'' = ObservationIndex.FromString "2002M1"
+            Assert.AreEqual (ov'', Seq.item (tail + nConsValues) seqOIdx)
         } |> TestUtilities.handleUnexpectedErrors
 
         result {
             let values = {0..11} |> Seq.map float
-            let! seqOIdx = EntityTests.createIterator "2001M08" values Q 
+            let nConsValues = 4
+            let! seqOIdx = TestUtilities.createIterator "2001M08" values Q 
             
-            Assert.AreEqual (Seq.length values, Seq.length seqOIdx) 
-            let! ov' = ObservationIndex.FromString "2001Q02"
+            Assert.AreEqual ((Seq.length values) + nConsValues, Seq.length seqOIdx) 
+            let! ov' = ObservationIndex.FromString "2001M8"
             Assert.AreEqual (ov', Seq.head seqOIdx)
         } |> TestUtilities.handleUnexpectedErrors
 
         result {
             let length = 10
-            let! seqOIdx = EntityTests.createIterator "2001M09" (TestUtilities.createRandomValues 10) Q 
-            Assert.AreEqual (length, Seq.length seqOIdx) 
+            let nConsValues = 3
+            let! seqOIdx = TestUtilities.createIterator "2001M09" (TestUtilities.createRandomValues 10) Q 
+            Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
-            let! ov' = ObservationIndex.FromString "2001Q03"
+            let! ov' = ObservationIndex.FromString "2001M9"
             Assert.AreEqual (ov', Seq.head seqOIdx)
         } |> TestUtilities.handleUnexpectedErrors
 
@@ -115,10 +120,10 @@ type EntityTests () =
         result {
             let length = 8
             let values = TestUtilities.createRandomValues length
-            let! seqOIdx = EntityTests.createIterator "2001Q02" values A 
+            let! seqOIdx = TestUtilities.createIterator "2001Q02" values A 
             
-            Assert.AreEqual (Seq.length values, Seq.length seqOIdx)
-            let! ov' = ObservationIndex.FromString "2001A00" 
+            Assert.AreEqual ((Seq.length values) + 2, Seq.length seqOIdx)
+            let! ov' = ObservationIndex.FromString "2001Q2" 
             Assert.AreEqual (ov', Seq.head seqOIdx)
         } |> TestUtilities.handleUnexpectedErrors
 
@@ -145,8 +150,8 @@ type UtilityTests () =
         result {
             let length = 10
             let tail = length - 1
-            let! seqOIdx = EntityTests.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
+            let! seqOIdx = TestUtilities.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
 
             seqOIdx |> Seq.iter (printfn "%A ")
-            Assert.AreEqual (length, Seq.length seqOIdx)              
+            Assert.AreEqual (length + 3, Seq.length seqOIdx)              
         } |> TestUtilities.handleUnexpectedErrors

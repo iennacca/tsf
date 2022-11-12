@@ -21,3 +21,19 @@ result {
     seqOIdx |> Seq.iter (printfn "%A ")
     // Assert.AreEqual (length, Seq.length seqOIdx)              
 } |> TestUtilities.handleUnexpectedErrors
+
+result {
+    let length = 10
+    let nConsValues = 3
+    let tail = length - 1
+    let! seqOIdx = TestUtilities.createIterator "2001M04" (TestUtilities.createRandomValues length) Q 
+    Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
+
+    seqOIdx |> Seq.iter (printfn "%A ")
+    Seq.head seqOIdx |> printfn "head: %A"
+    
+    let! ov' = ObservationIndex.FromString "2001M4"
+    Assert.AreEqual (ov', Seq.head seqOIdx)
+
+    Assert.AreEqual (ov', Seq.item (tail + nConsValues) seqOIdx)
+} |> TestUtilities.handleUnexpectedErrors
