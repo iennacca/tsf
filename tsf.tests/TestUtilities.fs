@@ -22,11 +22,22 @@ module TestUtilities =
 
     let (>>=) m f = Result.bind f m
 
-    let createIterator strOI oValues consFreq = 
+    let private createOV strOI oValues = 
         let length = Seq.length oValues
         result {
             let! oi =  ObservationIndex.FromString strOI
             let v = createRandomValues length
-            let ov = { OIdx = oi; Values = v }
+            return! Ok { OIdx = oi; Values = v }
+        }
+
+    let createIterator strOI oValues consFreq = 
+        result {
+            let! ov = createOV strOI oValues
             return! ObservationValueConsolidator.iterate consFreq ov
+        }
+
+    let createConsolidator strOI oValues consFreq = 
+        result {
+            let! ov = createOV strOI oValues
+            return! ObservationValueConsolidator.consolidate consFreq ov
         }

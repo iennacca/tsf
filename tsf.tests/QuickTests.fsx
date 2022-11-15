@@ -35,5 +35,6 @@ result {
     let! ov' = ObservationIndex.FromString "2001M4"
     Assert.AreEqual (ov', Seq.head seqOIdx)
 
+    let! ov' = ObservationIndex.FromString "2002M1"
     Assert.AreEqual (ov', Seq.item (tail + nConsValues) seqOIdx)
 } |> TestUtilities.handleUnexpectedErrors
