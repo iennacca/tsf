@@ -18,7 +18,7 @@ module Entities =
         static member FromString s = Utilities.StringToDiscriminatedUnion<ConsolidateMethod> s
 
     [<Struct>]
-    //Named both union cases because of error FS3204 (nonsensical in this case IMHO) 
+    // [NOTE]: Named both union cases because of error FS3204 (nonsensical in this case IMHO) 
     type FrequencyIndex = CardinalType of c:int | DateType of d:DateOnly with
         static member max f = 
             match f with
@@ -39,6 +39,7 @@ module Entities =
         static member public value (Year y) = y
 
     [<Struct>]
+    // [TODO]: Combine ObservationValue type and module
     type ObservationValue = private ObservationValue of float with 
         static member private value (ObservationValue v) = v 
 
@@ -101,50 +102,82 @@ module Entities =
             sprintf "[%A %A %A]" this.Year this.Freq this.Idx
 
     [<Struct>]
-    type ObservationValues = { OIdx:ObservationIndex; Values:float seq } with
-        static member public iterate (consFreq:FrequencyType) (ov:ObservationValues) = 
-            let checkConsFreq oldf newf = 
-                if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
-                else Error [InvalidConsolidationOperation]
+    type ObservationValues = { OIdx:ObservationIndex; Values:float seq }
 
-            let getConsDivisor consFreqMax oiFreqMax  = 
-                oiFreqMax / consFreqMax
+    module ObservationValueConsolidator =
+        let private checkConsFreq oldf newf = 
+            if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
+            else Error [InvalidConsolidationOperation]
 
-            let getConsOIdx d ov = 
-                let (CardinalType fIdx) = ov.OIdx.Idx
-                fIdx / d
+        // [NOTE]: Unusable for DateType
+        let private getConsDivisor consFreq oiFreq  = 
+            let oiFreqMax = FrequencyIndex.max oiFreq
+            let consFreqMax = FrequencyIndex.max consFreq
+            oiFreqMax / consFreqMax
 
-            // let getConsOIdxSeq oidx length = 
-            //     Ok ((Seq.unfold (fun acc -> Some (acc, (ObservationIndex.increment acc 1))) oidx) |> Seq.take length) 
+        // [NOTE]: Unusable for DateType
+        let private getConsFIdx d ovIdx = 
+            let (CardinalType fIdx) = ovIdx
+            fIdx / d
 
-            let getConsOIdxSeq consoidx ov d = 
-                let s = seq {
-                    let mutable j = 0
-                    
-                    let length = Seq.length ov.Values
-                    for i in 0 .. length - 1 do
-                        let oi = ObservationIndex.increment ov.OIdx i
-                        let (CardinalType c) = oi.Idx
-
-                        yield oi
-                        if (c + 1) % d = 0 then
-                            yield ObservationIndex.increment consoidx j
-                            j <- j + 1
-                }
-                Ok s
-
+        let private getConsOIdx (consFreq:FrequencyType) (oi:ObservationIndex) (ov:seq<float>)=
             result {
-                let! y' = Ok ov.OIdx.Year
-                and! f' = checkConsFreq ov.OIdx.Freq consFreq
+                let! y' = Ok oi.Year
+                and! f' = checkConsFreq oi.Freq consFreq
 
-                let oiFreqMax = FrequencyIndex.max ov.OIdx.Freq
-                let consFreqMax = FrequencyIndex.max consFreq
+                let d' = getConsDivisor consFreq oi.Freq
+                let i' = getConsFIdx d' oi.Idx
+                return! Ok { _year = y'; _freq = f'; _idx = (CardinalType i') } 
+            }
+
+        // member this.getConsOIdxSeq oidx length = 
+        //     Ok ((Seq.unfold (fun acc -> Some (acc, (ObservationIndex.increment acc 1))) oidx) |> Seq.take length) 
+
+        // [TODO]: Remove type definition on consoidx?
+        let private getConsOIdxSeq (consoidx:ObservationIndex) ov =
+            let d = getConsDivisor consoidx.Freq ov.OIdx.Freq  
+            let s = seq {
+                let mutable j = 0
+                
                 let length = Seq.length ov.Values
+                for i in 0 .. length - 1 do
+                    let oi = ObservationIndex.increment ov.OIdx i
+                    let (CardinalType c) = oi.Idx
 
-                let d' = getConsDivisor consFreqMax oiFreqMax
-                let i' = getConsOIdx d' ov
-                let oi' = { _year = y'; _freq = f'; _idx = (CardinalType i') } 
+                    yield oi
+                    if (c + 1) % d = 0 then
+                        yield ObservationIndex.increment consoidx j
+                        j <- j + 1
+            }
+            Ok s
 
-                // return! (getConsOIdxSeq oi' length)
-                return! (getConsOIdxSeq oi' ov d')
+        let private getConsOValuesSeq (consoidx:ObservationIndex) ov = 
+            let d = getConsDivisor consoidx.Freq ov.OIdx.Freq  
+            let s = seq {
+                let mutable i = 0
+                let mutable j = 0
+                
+                let length = Seq.length ov.Values
+                for v in ov.Values do
+                    let oi = ObservationIndex.increment ov.OIdx i
+                    i <- i + 1
+                    let (CardinalType c) = oi.Idx
+
+                    yield oi
+                    if (c + 1) % d = 0 then
+                        yield ObservationIndex.increment consoidx j
+                        j <- j + 1
+            }
+            Ok s
+
+        let iterate consFreq oValues = 
+            result {
+                let! oi' = getConsOIdx consFreq oValues.OIdx oValues.Values
+                return! (getConsOIdxSeq oi' oValues)
+            }
+
+        let consolidate consFreq oValues = 
+            result {
+                let! oi' = getConsOIdx consFreq oValues.OIdx oValues.Values
+                return! (getConsOValuesSeq oi' oValues)
             }

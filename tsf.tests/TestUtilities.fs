@@ -28,6 +28,5 @@ module TestUtilities =
             let! oi =  ObservationIndex.FromString strOI
             let v = createRandomValues length
             let ov = { OIdx = oi; Values = v }
-            return! ObservationValues.iterate consFreq ov
+            return! ObservationValueConsolidator.iterate consFreq ov
         }
-
