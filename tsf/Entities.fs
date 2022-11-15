@@ -151,21 +151,24 @@ module Entities =
             }
             Ok s
 
-        let private getConsOValuesSeq (consoidx:ObservationIndex) ov = 
+        let private getConsOValuesSeq (consoidx:ObservationIndex) cons ov = 
             let d = getConsDivisor consoidx.Freq ov.OIdx.Freq  
             let s = seq {
                 let mutable i = 0
                 let mutable j = 0
+                let mutable l = []
                 
-                let length = Seq.length ov.Values
                 for v in ov.Values do
                     let oi = ObservationIndex.increment ov.OIdx i
                     i <- i + 1
                     let (CardinalType c) = oi.Idx
 
-                    yield oi
+                    l <- List.append l [v]
+                    yield (v, ov.OIdx)
+
                     if (c + 1) % d = 0 then
-                        yield ObservationIndex.increment consoidx j
+                        yield (cons l, ObservationIndex.increment consoidx j)
+                        l <- []
                         j <- j + 1
             }
             Ok s
@@ -176,8 +179,11 @@ module Entities =
                 return! (getConsOIdxSeq oi' oValues)
             }
 
+        let consAdd l = 
+            List.fold (+) 0.0 l
+
         let consolidate consFreq oValues = 
             result {
                 let! oi' = getConsOIdx consFreq oValues.OIdx oValues.Values
-                return! (getConsOValuesSeq oi' oValues)
+                return! (getConsOValuesSeq oi' consAdd oValues)
             }
