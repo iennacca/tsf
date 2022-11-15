@@ -16,14 +16,6 @@ open tsf.tests
 
 result {
     let length = 10
-    let! seqOIdx = TestUtilities.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
-
-    seqOIdx |> Seq.iter (printfn "%A ")
-    // Assert.AreEqual (length, Seq.length seqOIdx)              
-} |> TestUtilities.handleUnexpectedErrors
-
-result {
-    let length = 10
     let nConsValues = 3
     let tail = length - 1
     let! seqOIdx = TestUtilities.createIterator "2001M04" (TestUtilities.createRandomValues length) Q 
@@ -37,4 +29,18 @@ result {
 
     let! ov' = ObservationIndex.FromString "2002M1"
     Assert.AreEqual (ov', Seq.item (tail + nConsValues) seqOIdx)
+} |> TestUtilities.handleUnexpectedErrors
+
+result {
+    let length = 10
+    let! seqOIdx = TestUtilities.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
+
+    seqOIdx |> Seq.iter (printfn "%A ")
+} |> TestUtilities.handleUnexpectedErrors
+
+result {
+    let length = 10
+    let! seqOIdx = TestUtilities.createConsolidator "2001M0" [1..length] Q 
+
+    seqOIdx |> Seq.iter (printfn "%A ")
 } |> TestUtilities.handleUnexpectedErrors
