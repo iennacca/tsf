@@ -22,6 +22,14 @@ module TestUtilities =
 
     let (>>=) m f = Result.bind f m
 
+module OIdxUtlities = 
+    let createIterator strOI = 
+        result {
+            let! oi =  ObservationIndex.FromString strOI
+            return ()
+        }
+
+module ConsolidatorUtilities = 
     let private createOV strOI oValues = 
         result {
             let! oi =  ObservationIndex.FromString strOI

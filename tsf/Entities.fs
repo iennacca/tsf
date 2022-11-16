@@ -75,7 +75,7 @@ module Entities =
                 let maxfreq = FrequencyIndex.max oi.Freq
                 let mutable (Year y) = oi.Year
                 let mutable idx = i
-                while idx + inc > maxfreq do
+                while idx + inc >= maxfreq do
                     y <- y + 1
                     idx <- idx - maxfreq
                 idx <- idx + inc 

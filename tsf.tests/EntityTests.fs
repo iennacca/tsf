@@ -68,12 +68,25 @@ type EntityTests () =
 [<TestClass>]
 type IteratorTests () =
     [<TestMethod>]
+    member this.CanIterateOverYearlyBoundaries () =
+        result {
+            let length = 13
+            let! oidx = ObservationIndex.FromString "2001M0"
+            
+            let seqOIdx = (Seq.unfold (fun acc -> Some (acc, (ObservationIndex.increment acc 1))) oidx) |> Seq.take length 
+            Assert.AreEqual (oidx, Seq.head seqOIdx)
+            let! oidx' = ObservationIndex.FromString "2002M0"
+            Assert.AreEqual (oidx', Seq.item (length - 1) seqOIdx)
+        } |> TestUtilities.handleUnexpectedErrors
+
+
+    [<TestMethod>]
     member this.CanIterateFromMonthly () =
         result {
             let length = 10
             let nConsValues = 3
             let tail = length - 1
-            let! seqOIdx = TestUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length) 
+            let! seqOIdx = ConsolidatorUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length) 
             Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
             let! ov' = ObservationIndex.FromString "2001M0"
@@ -87,7 +100,7 @@ type IteratorTests () =
             let length = 10
             let nConsValues = 3
             let tail = length - 1
-            let! seqOIdx = TestUtilities.createIterator Q "2001M04" (TestUtilities.createRandomValues length) 
+            let! seqOIdx = ConsolidatorUtilities.createIterator Q "2001M04" (TestUtilities.createRandomValues length) 
             Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
             let! ov' = ObservationIndex.FromString "2001M4"
@@ -100,7 +113,7 @@ type IteratorTests () =
         result {
             let values = {0..11} |> Seq.map float
             let nConsValues = 4
-            let! seqOIdx = TestUtilities.createIterator Q "2001M08" values
+            let! seqOIdx = ConsolidatorUtilities.createIterator Q "2001M08" values
 
             Assert.AreEqual ((Seq.length values) + nConsValues, Seq.length seqOIdx) 
             let! ov' = ObservationIndex.FromString "2001M8"
@@ -110,7 +123,7 @@ type IteratorTests () =
         result {
             let length = 10
             let nConsValues = 3
-            let! seqOIdx = TestUtilities.createIterator Q "2001M09" (TestUtilities.createRandomValues 10) 
+            let! seqOIdx = ConsolidatorUtilities.createIterator Q "2001M09" (TestUtilities.createRandomValues 10) 
             Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
             let! ov' = ObservationIndex.FromString "2001M9"
@@ -122,7 +135,7 @@ type IteratorTests () =
         result {
             let length = 8
             let values = TestUtilities.createRandomValues length
-            let! seqOIdx = TestUtilities.createIterator A "2001Q02" values 
+            let! seqOIdx = ConsolidatorUtilities.createIterator A "2001Q02" values 
             
             Assert.AreEqual ((Seq.length values) + 2, Seq.length seqOIdx)
             let! ov' = ObservationIndex.FromString "2001Q2" 
@@ -138,13 +151,12 @@ type ConsolidatorTests () =
                 Seq.fold (+) 0.0 l
 
             let length = 24
-            let! seqOIdx = TestUtilities.createConsolidator Q consAdd "2001M0" [1..length] 
+            let! seqOIdx = ConsolidatorUtilities.createConsolidator Q consAdd "2001M0" [1..length] 
 
             let! oi = ObservationIndex.FromString "2001Q0"
             let v = (6.0, oi)
             Assert.AreEqual (v, Seq.head seqOIdx)
         } |> TestUtilities.handleUnexpectedErrors
-
 
 [<TestClass>]
 type UtilityTests () =
@@ -163,7 +175,7 @@ type UtilityTests () =
         result {
             let length = 10
             let tail = length - 1
-            let! seqOIdx = TestUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length)
+            let! seqOIdx = ConsolidatorUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length)
 
             seqOIdx |> Seq.iter (printfn "%A ")
             Assert.AreEqual (length + 3, Seq.length seqOIdx)              
