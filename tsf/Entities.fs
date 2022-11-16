@@ -105,6 +105,7 @@ module Entities =
     type ObservationValues = { OIdx:ObservationIndex; Values:float seq }
 
     module ObservationValueConsolidator =
+
         let private checkConsFreq oldf newf = 
             if FrequencyIndex.max oldf >  FrequencyIndex.max newf then Ok newf
             else Error [InvalidConsolidationOperation]
@@ -151,24 +152,24 @@ module Entities =
             }
             Ok s
 
-        let private getConsOValuesSeq (consoidx:ObservationIndex) cons ov = 
+        let private getConsOValuesSeq (consoidx:ObservationIndex) (consMethod:seq<float>->float) ov = 
             let d = getConsDivisor consoidx.Freq ov.OIdx.Freq  
             let s = seq {
                 let mutable i = 0
                 let mutable j = 0
-                let mutable l = []
+                let mutable l = Seq.empty<float>
                 
                 for v in ov.Values do
                     let oi = ObservationIndex.increment ov.OIdx i
                     i <- i + 1
                     let (CardinalType c) = oi.Idx
 
-                    l <- List.append l [v]
-                    yield (v, ov.OIdx)
+                    l <- Seq.append l (seq {v})
+                    // yield (v, ov.OIdx)
 
                     if (c + 1) % d = 0 then
-                        yield (cons l, ObservationIndex.increment consoidx j)
-                        l <- []
+                        yield (consMethod l, ObservationIndex.increment consoidx j)
+                        l <- Seq.empty<float>
                         j <- j + 1
             }
             Ok s
@@ -179,11 +180,8 @@ module Entities =
                 return! (getConsOIdxSeq oi' oValues)
             }
 
-        let consAdd l = 
-            List.fold (+) 0.0 l
-
-        let consolidate consFreq oValues = 
+        let consolidate consFreq consMethod oValues = 
             result {
                 let! oi' = getConsOIdx consFreq oValues.OIdx oValues.Values
-                return! (getConsOValuesSeq oi' consAdd oValues)
+                return! (getConsOValuesSeq oi' consMethod oValues)
             }

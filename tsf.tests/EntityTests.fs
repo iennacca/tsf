@@ -65,13 +65,15 @@ type EntityTests () =
         Assert.IsTrue (List.contains InvalidType e)
         Assert.IsTrue (List.contains InvalidFormat e)
 
+[<TestClass>]
+type IteratorTests () =
     [<TestMethod>]
-    member this.CanConsolidateFromMonthly () =
+    member this.CanIterateFromMonthly () =
         result {
             let length = 10
             let nConsValues = 3
             let tail = length - 1
-            let! seqOIdx = TestUtilities.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
+            let! seqOIdx = TestUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length) 
             Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
             let! ov' = ObservationIndex.FromString "2001M0"
@@ -85,7 +87,7 @@ type EntityTests () =
             let length = 10
             let nConsValues = 3
             let tail = length - 1
-            let! seqOIdx = TestUtilities.createIterator "2001M04" (TestUtilities.createRandomValues length) Q 
+            let! seqOIdx = TestUtilities.createIterator Q "2001M04" (TestUtilities.createRandomValues length) 
             Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
             let! ov' = ObservationIndex.FromString "2001M4"
@@ -98,8 +100,8 @@ type EntityTests () =
         result {
             let values = {0..11} |> Seq.map float
             let nConsValues = 4
-            let! seqOIdx = TestUtilities.createIterator "2001M08" values Q 
-            
+            let! seqOIdx = TestUtilities.createIterator Q "2001M08" values
+
             Assert.AreEqual ((Seq.length values) + nConsValues, Seq.length seqOIdx) 
             let! ov' = ObservationIndex.FromString "2001M8"
             Assert.AreEqual (ov', Seq.head seqOIdx)
@@ -108,7 +110,7 @@ type EntityTests () =
         result {
             let length = 10
             let nConsValues = 3
-            let! seqOIdx = TestUtilities.createIterator "2001M09" (TestUtilities.createRandomValues 10) Q 
+            let! seqOIdx = TestUtilities.createIterator Q "2001M09" (TestUtilities.createRandomValues 10) 
             Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
             let! ov' = ObservationIndex.FromString "2001M9"
@@ -116,11 +118,11 @@ type EntityTests () =
         } |> TestUtilities.handleUnexpectedErrors
 
     [<TestMethod>]
-    member this.CanConsolidateFromQuarterly () =
+    member this.CanIterateFromQuarterly () =
         result {
             let length = 8
             let values = TestUtilities.createRandomValues length
-            let! seqOIdx = TestUtilities.createIterator "2001Q02" values A 
+            let! seqOIdx = TestUtilities.createIterator A "2001Q02" values 
             
             Assert.AreEqual ((Seq.length values) + 2, Seq.length seqOIdx)
             let! ov' = ObservationIndex.FromString "2001Q2" 
@@ -128,13 +130,24 @@ type EntityTests () =
         } |> TestUtilities.handleUnexpectedErrors
 
 [<TestClass>]
+type ConsolidatorTests () =
+    [<TestMethod>]
+    member this.CanConsolidateFromMonthly () =
+        result {
+            let consAdd l = 
+                Seq.fold (+) 0.0 l
+
+            let length = 24
+            let! seqOIdx = TestUtilities.createConsolidator Q consAdd "2001M0" [1..length] 
+
+            let! oi = ObservationIndex.FromString "2001Q0"
+            let v = (6.0, oi)
+            Assert.AreEqual (v, Seq.head seqOIdx)
+        } |> TestUtilities.handleUnexpectedErrors
+
+
+[<TestClass>]
 type UtilityTests () =
-    let getConsOIdxSeq oidx length d =
-        let unfolder acc = 
-            Some (acc, (ObservationIndex.increment acc 1))
-
-        Ok ((Seq.unfold (fun acc -> Some (acc, (ObservationIndex.increment acc 1))) oidx) |> Seq.take length) 
-
     [<TestMethod>]
     member this.CanCreateResultFromWrappedException () = 
         result { 
@@ -150,7 +163,7 @@ type UtilityTests () =
         result {
             let length = 10
             let tail = length - 1
-            let! seqOIdx = TestUtilities.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
+            let! seqOIdx = TestUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length)
 
             seqOIdx |> Seq.iter (printfn "%A ")
             Assert.AreEqual (length + 3, Seq.length seqOIdx)              

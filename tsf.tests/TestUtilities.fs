@@ -28,14 +28,14 @@ module TestUtilities =
             return! Ok { OIdx = oi; Values = oValues }
         }
 
-    let createIterator strOI oValues consFreq = 
+    let createIterator consFreq strOI oValues = 
         result {
             let! ov = createOV strOI oValues
             return! ObservationValueConsolidator.iterate consFreq ov
         }
 
-    let createConsolidator strOI oValues consFreq = 
+    let createConsolidator consFreq consMethod strOI oValues = 
         result {
             let! ov = createOV strOI oValues
-            return! ObservationValueConsolidator.consolidate consFreq ov
+            return! ObservationValueConsolidator.consolidate consFreq consMethod ov
         }

@@ -8,7 +8,6 @@
 #load "..\\tsf\\Entities.fs"
 #load "..\\tsf.tests\\TestUtilities.fs"
 
-open System
 open Microsoft.VisualStudio.TestTools.UnitTesting
 open tsf.Utilities
 open tsf.Entities
@@ -18,7 +17,7 @@ result {
     let length = 10
     let nConsValues = 3
     let tail = length - 1
-    let! seqOIdx = TestUtilities.createIterator "2001M04" (TestUtilities.createRandomValues length) Q 
+    let! seqOIdx = TestUtilities.createIterator Q "2001M04" (TestUtilities.createRandomValues length) 
     Assert.AreEqual (length + nConsValues, Seq.length seqOIdx) 
 
     seqOIdx |> Seq.iter (printfn "%A ")
@@ -32,15 +31,25 @@ result {
 } |> TestUtilities.handleUnexpectedErrors
 
 result {
-    let length = 10
-    let! seqOIdx = TestUtilities.createIterator "2001M0" (TestUtilities.createRandomValues length) Q 
+    let length = 24
+    let! seqOIdx = TestUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length)
 
     seqOIdx |> Seq.iter (printfn "%A ")
 } |> TestUtilities.handleUnexpectedErrors
 
 result {
-    let length = 10
-    let! seqOIdx = TestUtilities.createConsolidator "2001M0" [1..length] Q 
+    let consAdd l = 
+        Seq.fold (+) 0.0 l
+
+    let length = 24
+    let! seqOIdx = TestUtilities.createConsolidator Q consAdd "2001M0" [1..length] 
+
+    seqOIdx |> Seq.iter (printfn "%A ")
+} |> TestUtilities.handleUnexpectedErrors
+
+result {
+    let length = 2
+    let! seqOIdx = TestUtilities.createIterator Q "2001M11" (TestUtilities.createRandomValues length)
 
     seqOIdx |> Seq.iter (printfn "%A ")
 } |> TestUtilities.handleUnexpectedErrors
