@@ -42,7 +42,8 @@ result {
         Seq.fold (+) 0.0 l
 
     let length = 24
-    let! seqOIdx = ConsolidatorUtilities.createConsolidator Q consAdd "2001M0" [1..length] 
+    let values = {0 .. length - 1} |> Seq.map float
+    let! seqOIdx = ConsolidatorUtilities.createConsolidator Q consAdd "2001M0" values
 
     seqOIdx |> Seq.iter (printfn "%A ")
 } |> TestUtilities.handleUnexpectedErrors
@@ -56,9 +57,31 @@ result {
 
 result {
     let length = 24
-    let! oidx = ObservationIndex.FromString "2001M11"
+    let! oidx = ObservationIndex.FromString "2001Q3"
     
     let s = (Seq.unfold (fun acc -> Some (acc, (ObservationIndex.increment acc 1))) oidx) |> Seq.take length 
     s |> Seq.iter (printfn "%A ")
     ()
+} |> TestUtilities.handleUnexpectedErrors
+
+result {
+    let consAdd (l:float seq) = 
+        Seq.fold (+) 0.0 l
+
+    let length = 24
+    let values = {0..length - 1} |> Seq.map float
+    let! seqOIdx = ConsolidatorUtilities.createConsolidator Q consAdd "2001M0" values
+
+    let! oi = ObservationIndex.FromString "2001Q0"
+    let v = (3.0, oi)
+    Assert.AreEqual (v, Seq.head seqOIdx)
+
+    seqOIdx |> Seq.iter (printfn "%A ")
+    seqOIdx |> Seq.map (fun (x,y) -> x ) |> Seq.iter (printfn "%A ")
+
+    let expected = seq { 3.0; 12.0; 21.0; 30.0; 39.0; 48.0; 57.0; 66.0 }
+    let actual = seqOIdx |> Seq.map (fun (x,y) -> x)
+    let r = Seq.fold2 (fun acc x y ->  (x = y) && acc) true expected actual
+    Assert.AreEqual (true,r)
+
 } |> TestUtilities.handleUnexpectedErrors

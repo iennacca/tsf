@@ -6,6 +6,29 @@ open tsf.Entities
 open tsf.Utilities
 
 [<TestClass>]
+type UtilityTests () =
+    [<TestMethod>]
+    member this.CanCreateResultFromWrappedException () = 
+        result { 
+            let! i = ToResult int "1"
+            Assert.AreEqual (1, i)
+
+            let! i' = "2" |> ToResult int
+            Assert.AreEqual (2, i')
+        } |> TestUtilities.handleUnexpectedErrors
+
+    [<TestMethod>]
+    member this.CanPrintObservationIndices () =
+        result {
+            let length = 10
+            let tail = length - 1
+            let! seqOIdx = ConsolidatorUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length)
+
+            seqOIdx |> Seq.iter (printfn "%A ")
+            Assert.AreEqual (length + 3, Seq.length seqOIdx)              
+        } |> TestUtilities.handleUnexpectedErrors
+
+[<TestClass>]
 type EntityTests () =
     [<TestMethod>]
     member this.CanCreateAnObservationValue () =
@@ -79,7 +102,6 @@ type IteratorTests () =
             Assert.AreEqual (oidx', Seq.item (length - 1) seqOIdx)
         } |> TestUtilities.handleUnexpectedErrors
 
-
     [<TestMethod>]
     member this.CanIterateFromMonthly () =
         result {
@@ -147,36 +169,22 @@ type ConsolidatorTests () =
     [<TestMethod>]
     member this.CanConsolidateFromMonthly () =
         result {
-            let consAdd l = 
+            let consAdd (l:float seq) = 
                 Seq.fold (+) 0.0 l
 
             let length = 24
-            let! seqOIdx = ConsolidatorUtilities.createConsolidator Q consAdd "2001M0" [1..length] 
+            let values = {0..length - 1} |> Seq.map float
+            let! seqOIdx = ConsolidatorUtilities.createConsolidator Q consAdd "2001M0" values
 
             let! oi = ObservationIndex.FromString "2001Q0"
-            let v = (6.0, oi)
+            let v = (3.0, oi)
             Assert.AreEqual (v, Seq.head seqOIdx)
-        } |> TestUtilities.handleUnexpectedErrors
 
-[<TestClass>]
-type UtilityTests () =
-    [<TestMethod>]
-    member this.CanCreateResultFromWrappedException () = 
-        result { 
-            let! i = ToResult int "1"
-            Assert.AreEqual (1, i)
+            // seqOIdx |> Seq.iter (printfn "%A ")
+            // seqOIdx |> Seq.map (fun (x,y) -> x ) |> Seq.iter (printfn "%A ")
 
-            let! i' = "2" |> ToResult int
-            Assert.AreEqual (2, i')
-        } |> TestUtilities.handleUnexpectedErrors
-
-    [<TestMethod>]
-    member this.CanPrintObservationIndices () =
-        result {
-            let length = 10
-            let tail = length - 1
-            let! seqOIdx = ConsolidatorUtilities.createIterator Q "2001M0" (TestUtilities.createRandomValues length)
-
-            seqOIdx |> Seq.iter (printfn "%A ")
-            Assert.AreEqual (length + 3, Seq.length seqOIdx)              
+            let expected = seq { 3.0; 12.0; 21.0; 30.0; 39.0; 48.0; 57.0; 66.0 }
+            let actual = seqOIdx |> Seq.map (fun (x,y) -> x)
+            let r = Seq.fold2 (fun acc x y ->  (x = y) && acc) true expected actual
+            Assert.AreEqual (true,r)
         } |> TestUtilities.handleUnexpectedErrors
